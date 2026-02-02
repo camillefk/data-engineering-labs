@@ -20,14 +20,14 @@
 
 #----REFATORAÇÃO----#
 
-
+import os
 import pandas as pd
 from typing import Optional
-import os
+
 
 #1. Primeiro eu tenho que definir a Exceção Customizada (To criando meu próprio erro, ajudando meu código a entender exatamente o que violou a regra de dados. Mais organizado assim).
-class DataValidationError(Exception): 
-    
+class DataValidationError(Exception):
+
     pass
 
 #2. Função de carregamento
@@ -40,16 +40,16 @@ def load_data(filepath: str) -> pd.DataFrame:
     Raises:
         FileNotFoundError: Se o arquivo não for encontrado no caminho especificado.
     """
-    if not os.path.exists(filepath): 
+    if not os.path.exists(filepath):
         raise FileNotFoundError(f"O arquivo '{filepath}' não foi encontrado.")
-    
+
     return pd.read_csv(filepath)
 
 #3. Função Pura de transformação (Lógica Core)
-def process_sales_data(df: pd.DataFrame, min_value: float= 1000.0) -> pd.DataFrame: 
+def process_sales_data(df: pd.DataFrame, min_value: float= 1000.0) -> pd.DataFrame:
     """Aqui processa os dados de vendas, vai limpa, calcular imposto e filtrar.
     Esta é uma função pura, ela não vai alterar o df original que foi recebido como argumento,
-    mas retornar um novo df transformado. (^3^) ('-')
+    mas retornar um novo df transformado.
 
     Args:
         df (pd.DataFrame): DataFrame contendo colunas 'valor'.
@@ -62,11 +62,11 @@ def process_sales_data(df: pd.DataFrame, min_value: float= 1000.0) -> pd.DataFra
         DataValidationError: Se a coluna obrigatória 'valor' não existir.
     """
     #Validação de Schema (simples)
-    required_cols = {'valor'} 
+    required_cols = {'valor'}
     if not required_cols.issubset(df.columns):
         missing = required_cols - set(df.columns)
         raise DataValidationError(f"Colunas obrigatórias ausentes: {missing}")
-    
+
     #Aqui eu evito mutação do original
     df_processed = df.copy()
 
@@ -74,13 +74,13 @@ def process_sales_data(df: pd.DataFrame, min_value: float= 1000.0) -> pd.DataFra
     df_processed = df_processed.dropna(subset=['valor'])
 
     #Regra de negóci0: cálculo do imposto de 15%
-    TAX_RATE = 0.15
-    df_processed['imposto'] = df_processed['valor'] * TAX_RATE
+    tax_rate = 0.15
+    df_processed['imposto'] = df_processed['valor'] * tax_rate
     #Eu limpei (tirei os valores nulos da coluna 'valor') salvei o resultado em df_processed e agora peguei a coluna 'valor' e multipliquei por 0.15 para ter o resultado dos impostos, salvando na coluna que criei chamada 'imposto'.
 
     #Filtragem
     df_processed = df_processed[df_processed['valor'] > min_value]
-    
+
     return df_processed
 
 #4. Função de Salvamento (efeito colateral)
@@ -105,16 +105,16 @@ def main():
         pass
 
     try:
-        
+
         print("Iniciando processamento...")
-        
+
         raw_df = load_data(INPUT_FILE)
-        
+
         # Aqui o erro customizado se o CSV estiver errado
         clean_df = process_sales_data(raw_df, min_value=1000.0)
-        
+
         save_data(clean_df, OUTPUT_FILE)
-        
+
     except DataValidationError as e:
         print(f"ERRO DE DADOS: {e}")
     except FileNotFoundError as e:
